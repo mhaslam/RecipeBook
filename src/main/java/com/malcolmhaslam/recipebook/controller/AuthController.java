@@ -2,12 +2,10 @@ package com.malcolmhaslam.recipebook.controller;
 
 import com.malcolmhaslam.recipebook.dto.LoginRequestDto;
 import com.malcolmhaslam.recipebook.dto.LoginResponseDto;
-import com.malcolmhaslam.recipebook.util.JwtUtil;
+import com.malcolmhaslam.recipebook.dto.UserDto;
+import com.malcolmhaslam.recipebook.util.JwtUtil.TokenResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import com.malcolmhaslam.recipebook.service.AuthenticationService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,33 +13,20 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private JwtUtil jwtUtil;
+    private AuthenticationService authenticationService;
 
     @PostMapping("/login")
-    public LoginResponseDto authenticateUser(@RequestBody LoginRequestDto loginRequestDto) {
+    public LoginResponseDto authenticateUser(@RequestBody LoginRequestDto loginRequestDto) throws Exception {
         System.out.println("Logging in: " + loginRequestDto.getEmail() + " with pass: " + loginRequestDto.getPassword());
 
-        Authentication authentication;
+        TokenResponse tokenResponse;
         try {
-            authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequestDto.getEmail(),
-                            loginRequestDto.getPassword()
-                    )
-            );
+            tokenResponse = authenticationService.authenticate(loginRequestDto);
         } catch (Exception e) {
             e.printStackTrace();
             throw e; // Or return a proper response
         }
-
-        System.out.println("Authenticated: " + authentication.isAuthenticated());
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        String jwt = jwtUtil.generateToken(loginRequestDto.getEmail());
-        return new LoginResponseDto(jwt);
+        UserDto userDto = authenticationService.getUserByEmail(loginRequestDto.getEmail());
+        return new LoginResponseDto(tokenResponse.getToken(), tokenResponse.getExpirationTime(), userDto);
     }
 }

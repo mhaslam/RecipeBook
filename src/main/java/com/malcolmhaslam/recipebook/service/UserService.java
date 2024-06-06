@@ -65,6 +65,13 @@ public class UserService implements UserDetailsService {
         return modelMapper.map(user, UserDto.class);
     }
 
+    public UserDto getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        System.out.println("User Found id: "+user.getId());
+        return modelMapper.map(user, UserDto.class);
+    }
+
     public Set<UserDto> getAllUsers(Long customerId) {
         Set<User> users = userRepository.findAllByCustomerId(customerId);
         return users.stream()

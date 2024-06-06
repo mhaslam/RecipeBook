@@ -27,13 +27,18 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(decodedKey);
     }
 
-    public String generateToken(String username) {
-        return Jwts.builder()
+    public TokenResponse generateToken(String username) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + expiration * 1000);
+
+        String token = Jwts.builder()
                 .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiration * 1000))
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .compact();
+
+        return new TokenResponse(token, expiryDate.getTime());
     }
 
     public String extractUsername(String token) {
@@ -54,6 +59,7 @@ public class JwtUtil {
     }
 
     public Boolean validateToken(String token, UserDetails userDetails) {
+        System.out.println("VALIDATING");
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
@@ -61,5 +67,23 @@ public class JwtUtil {
     private Boolean isTokenExpired(String token) {
         final Date expiration = extractClaim(token, Claims::getExpiration);
         return expiration.before(new Date());
+    }
+
+    public static class TokenResponse {
+        private String token;
+        private long expirationTime;
+
+        public TokenResponse(String token, long expirationTime) {
+            this.token = token;
+            this.expirationTime = expirationTime;
+        }
+
+        public String getToken() {
+            return token;
+        }
+
+        public long getExpirationTime() {
+            return expirationTime;
+        }
     }
 }

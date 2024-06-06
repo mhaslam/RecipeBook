@@ -16,8 +16,8 @@ public class BookController {
     private BookService bookService;
 
     @PostMapping
-    public BookDto createBook(@RequestBody BookDto bookDto) {
-        return bookService.createBook(bookDto);
+    public BookDto createBook(@PathVariable Long customerId, @RequestBody BookDto bookDto) {
+        return bookService.createBook(customerId, bookDto);
     }
 
     @GetMapping("/{id}")

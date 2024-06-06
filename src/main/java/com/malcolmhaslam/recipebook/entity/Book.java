@@ -6,25 +6,34 @@ import lombok.Setter;
 import javax.persistence.*;
 import java.util.Set;
 
+@Getter
 @Entity
 @Table(name = "books")
 public class Book {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Getter @Setter
+    @Setter
     private Long id;
 
-    @Getter @Setter
+    @Setter
     @Column(nullable = false)
     private String title;
 
+    @Setter
+    @Column(nullable = false)
+    private String description;
+
+    @Setter
+    @Column(nullable = false)
+    private String imageUrl;
+
     @ManyToOne
     @JoinColumn(name = "customer_id", nullable = false)
-    @Getter @Setter
+    @Setter
     private Customer customer;
 
     @ManyToMany(mappedBy = "books")
-    @Getter @Setter
+    @Setter
     private Set<Recipe> recipes;
 }

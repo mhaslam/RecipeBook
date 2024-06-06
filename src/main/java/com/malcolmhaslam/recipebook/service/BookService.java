@@ -2,8 +2,10 @@ package com.malcolmhaslam.recipebook.service;
 
 import com.malcolmhaslam.recipebook.dto.BookDto;
 import com.malcolmhaslam.recipebook.entity.Book;
+import com.malcolmhaslam.recipebook.entity.Customer;
 import com.malcolmhaslam.recipebook.exception.ResourceNotFoundException;
 import com.malcolmhaslam.recipebook.repository.BookRepository;
+import com.malcolmhaslam.recipebook.repository.CustomerRepository;
 import com.malcolmhaslam.recipebook.repository.RecipeRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +24,19 @@ public class BookService {
     private RecipeRepository recipeRepository;
 
     @Autowired
+    private CustomerRepository customerRepository;
+
+    @Autowired
     private ModelMapper modelMapper;
 
-    public BookDto createBook(BookDto bookDto) {
+    public BookDto createBook(Long customerId, BookDto bookDto) {
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
+
         Book book = modelMapper.map(bookDto, Book.class);
+        book.setCustomer(customer);
         book = bookRepository.save(book);
+        System.out.println(book.toString());
         return modelMapper.map(book, BookDto.class);
     }
 

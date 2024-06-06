@@ -6,6 +6,8 @@ import java.util.Set;
 @Data
 public class BookDto {
     private Long id;
-    private String name;
+    private String title;
+    private String description;
+    private String imageUrl;
     private Set<Long> recipeIds;
 }
