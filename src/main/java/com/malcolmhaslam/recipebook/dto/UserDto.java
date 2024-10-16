@@ -2,18 +2,13 @@ package com.malcolmhaslam.recipebook.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
-public class UserDto {
-
-    private Long id;
-
+@EqualsAndHashCode(callSuper = true)
+public class UserDto extends BaseDto {
     private String name;
-
     private String email;
-
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
-
-    private Long customerId;
 }

@@ -1,13 +1,17 @@
 package com.malcolmhaslam.recipebook.dto;
 
 import lombok.Data;
-import java.util.Set;
+import lombok.EqualsAndHashCode;
+
+import java.util.List;
 
 @Data
-public class BookDto {
-    private Long id;
+@EqualsAndHashCode(callSuper = true)
+public class BookDto extends BaseDto {
     private String title;
     private String description;
     private String imageUrl;
-    private Set<Long> recipeIds;
+    private String color;
+    private int recipeCount;
+    private List<String> recipes;
 }

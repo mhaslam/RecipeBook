@@ -6,8 +6,13 @@ import com.malcolmhaslam.recipebook.exception.ResourceNotFoundException;
 import com.malcolmhaslam.recipebook.repository.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,22 +38,32 @@ public class RecipeService {
     private CustomerRepository customerRepository;
 
     @Autowired
+    private TagRepository tagRepository;
+
+    @Autowired
     private ModelMapper modelMapper;
 
     public RecipeDto createRecipe(Long customerId, RecipeDto recipeDto, String createdBy) {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
 
-        Recipe recipe = modelMapper.map(recipeDto, Recipe.class);
+        // Sanitize instructions HTML
+        String safeInstructions = Jsoup.clean(recipeDto.getInstructions(), Safelist.basic());
+        recipeDto.setInstructions(safeInstructions);
 
-        User user = userRepository.findById(recipeDto.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        Recipe recipe = modelMapper.map(recipeDto, Recipe.class);
 
         Set<Book> books = recipeDto.getBookIds().stream()
                 .map(bookId -> bookRepository.findById(bookId)
                         .orElseThrow(() -> new ResourceNotFoundException("Book not found")))
                 .collect(Collectors.toSet());
         recipe.setBooks(books);
+
+        Set<Tag> tags = recipeDto.getTags().stream()
+                .map(tagTitle -> tagRepository.findByTitle(tagTitle)
+                        .orElseGet(() -> tagRepository.save(new Tag(tagTitle))))
+                .collect(Collectors.toSet());
+        recipe.setTags(tags);
 
         recipe.setCustomer(customer);
 
@@ -75,12 +90,14 @@ public class RecipeService {
                     return recipeIngredient;
                 })
                 .collect(Collectors.toSet());
-        recipe.setIngredients(recipeIngredients);
 
-        recipeRepository.save(recipe);
-        return modelMapper.map(recipe, RecipeDto.class);
+        // Clear existing ingredients and add the new ones
+        savedRecipe.getIngredients().clear();
+        savedRecipe.getIngredients().addAll(recipeIngredients);
+
+        recipeRepository.save(savedRecipe);
+        return modelMapper.map(savedRecipe, RecipeDto.class);
     }
-
 
     public RecipeDto getRecipe(Long customerId, Long id) {
         Recipe recipe = recipeRepository.findById(id)
@@ -93,10 +110,28 @@ public class RecipeService {
         return modelMapper.map(recipe, RecipeDto.class);
     }
 
-    public Set<RecipeDto> getAllRecipes(Long customerId) {
-        return recipeRepository.findAll().stream()
-                .filter(recipe -> recipe.getCustomer().getId().equals(customerId))
-                .map(recipe -> modelMapper.map(recipe, RecipeDto.class))
-                .collect(Collectors.toSet());
+    public Page<RecipeDto> getAllRecipes(Long customerId, Pageable pageable) {
+        Page<Recipe> recipesPage = recipeRepository.findByCustomerId(customerId, pageable);
+        return recipesPage.map(recipe -> modelMapper.map(recipe, RecipeDto.class));
+    }
+
+    public Page<RecipeDto> getRecipesByTitle(Long customerId, String title, Pageable pageable) {
+        Page<Recipe> recipesPage = recipeRepository.findByCustomerIdAndTitleContaining(customerId, title, pageable);
+        return recipesPage.map(recipe -> modelMapper.map(recipe, RecipeDto.class));
+    }
+
+    public Page<RecipeDto> getRecipesByTags(Long customerId, List<String> tags, Pageable pageable) {
+        Page<Recipe> recipesPage = recipeRepository.findByCustomerIdAndTags_TitleIn(customerId, tags, pageable);
+        return recipesPage.map(recipe -> modelMapper.map(recipe, RecipeDto.class));
+    }
+
+    public Page<RecipeDto> getRecipesByTitleAndTags(Long customerId, String title, List<String> tags, Pageable pageable) {
+        Page<Recipe> recipesPage = recipeRepository.findByCustomerIdAndTitleContainingAndTags_TitleIn(customerId, title, tags, pageable);
+        return recipesPage.map(recipe -> modelMapper.map(recipe, RecipeDto.class));
+    }
+
+    public Page<RecipeDto> getRecipesByBook(Long customerId, Long bookId, Pageable pageable) {
+        Page<Recipe> recipesPage = recipeRepository.findByCustomerIdAndBookId(customerId, bookId, pageable);
+        return recipesPage.map(recipe -> modelMapper.map(recipe, RecipeDto.class));
     }
 }

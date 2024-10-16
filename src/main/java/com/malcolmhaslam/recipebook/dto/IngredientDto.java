@@ -1,10 +1,11 @@
 package com.malcolmhaslam.recipebook.dto;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
-public class IngredientDto {
-    private Long id;
+@EqualsAndHashCode(callSuper = true)
+public class IngredientDto extends BaseDto {
     private String name;
     private String imageUrl;
 }
